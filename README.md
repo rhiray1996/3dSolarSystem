@@ -30,5 +30,5 @@ To enable the “Cosmic Insights” buttons, supply a Google Generative Language
 
 ## License
 
-This project has no license specified.
+This project is licensed under the MIT License - see [LICENSE](LICENSE) for details.
 
