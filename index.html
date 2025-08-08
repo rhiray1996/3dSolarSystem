@@ -1051,6 +1051,7 @@
             // Create planets
             const planets = [];
             const orbits = [];
+            const moonOrbits = [];
             const labels = [];
             const planetModifiers = {};
             const allCelestialBodies = []; // For raycasting
@@ -1061,6 +1062,13 @@
             const KM_PER_AU = 149.6e6;
             const REALISTIC_DISTANCE_SCALE = 1500; // 1 AU = 1500 units
             const KM_TO_UNIT_SCALE = REALISTIC_DISTANCE_SCALE / KM_PER_AU; // Scale for moon distances
+
+            // Helper: build a circular orbit line geometry
+            function makeOrbitGeometry(radius, segments = 256) {
+                const curve = new THREE.EllipseCurve(0, 0, radius, radius, 0, Math.PI * 2, false, 0);
+                const points = curve.getPoints(segments);
+                return new THREE.BufferGeometry().setFromPoints(points);
+            }
 
             let sunPhongMaterial; // To store original sun material
 
@@ -1087,16 +1095,15 @@
                 planet.receiveShadow = true;
                 planet.userData = { ...data, index, isPlanet: true };
                 
-                // Create orbit
+                // Create orbit (as a LineLoop for performance/clarity)
                 if (data.distance > 0) {
-                    const orbitGeometry = new THREE.RingGeometry(data.distance - 0.2, data.distance + 0.2, 128);
-                    const orbitMaterial = new THREE.MeshBasicMaterial({ 
-                        color: data.color, 
-                        side: THREE.DoubleSide,
+                    const orbitGeometry = makeOrbitGeometry(data.distance, 256);
+                    const orbitMaterial = new THREE.LineBasicMaterial({
+                        color: data.color,
                         transparent: true,
-                        opacity: 0.3
+                        opacity: 0.6
                     });
-                    const orbit = new THREE.Mesh(orbitGeometry, orbitMaterial);
+                    const orbit = new THREE.LineLoop(orbitGeometry, orbitMaterial);
                     orbit.rotation.x = -Math.PI / 2;
                     scene.add(orbit);
                     orbits.push(orbit);
@@ -1141,16 +1148,18 @@
                         moon.receiveShadow = true;
                         moon.userData = { ...moonData, isPlanet: false, parentPlanet: planet };
                         
-                        // Add moon orbit
-                        const moonOrbitGeom = new THREE.RingGeometry(moonData.distance - 0.05, moonData.distance + 0.05, 64);
-                        const moonOrbitMat = new THREE.MeshBasicMaterial({ color: 0x666666, side: THREE.DoubleSide, transparent: true, opacity: 0.3 });
-                        const moonOrbit = new THREE.Mesh(moonOrbitGeom, moonOrbitMat);
+                        // Add moon orbit (LineLoop)
+                        const moonOrbitGeom = makeOrbitGeometry(moonData.distance, 128);
+                        const moonOrbitMat = new THREE.LineBasicMaterial({ color: 0x666666, transparent: true, opacity: 0.6 });
+                        const moonOrbit = new THREE.LineLoop(moonOrbitGeom, moonOrbitMat);
                         moonOrbit.rotation.x = -Math.PI / 2;
+                        moonOrbit.userData = { moonData, isMoonOrbit: true };
                         
                         planet.add(moonOrbit); // Add orbit to the planet
                         planet.add(moon); // Add moon as a child of the planet
                         allCelestialBodies.push(moon);
                         moonObjects.push(moon);
+                        moonOrbits.push(moonOrbit);
                     });
                 }
             });
@@ -1276,6 +1285,7 @@
             document.getElementById('showOrbits').addEventListener('change', (e) => {
                 showOrbits = e.target.checked;
                 orbits.forEach(orbit => orbit.visible = showOrbits);
+                moonOrbits.forEach(orbit => orbit.visible = showOrbits);
             });
 
             document.getElementById('showLabels').addEventListener('change', (e) => {
@@ -1433,7 +1443,7 @@
                     const originalDistance = planetData[index + 1].distance;
                     const newDistance = originalDistance * orbitSizeMultiplier;
                     orbit.geometry.dispose();
-                    orbit.geometry = new THREE.RingGeometry(newDistance - 0.2, newDistance + 0.2, 128);
+                    orbit.geometry = makeOrbitGeometry(newDistance, 256);
                 });
             }
 
@@ -1850,6 +1860,18 @@
                 sunLight.shadow.camera.updateProjectionMatrix();
                 
                 // Update scales and positions
+                orbits.forEach((orbit, index) => {
+                    const data = planetData[index + 1];
+                    const distance = isArtistic ? data.distance : data.realisticDistanceAU * REALISTIC_DISTANCE_SCALE;
+                    orbit.geometry.dispose();
+                    orbit.geometry = makeOrbitGeometry(distance, 256);
+                });
+                moonOrbits.forEach((mOrbit) => {
+                    const md = mOrbit.userData.moonData;
+                    const radius = isArtistic ? md.distance : md.realisticDistanceKM * KM_TO_UNIT_SCALE;
+                    mOrbit.geometry.dispose();
+                    mOrbit.geometry = makeOrbitGeometry(radius, 128);
+                });
                 planets.forEach((planet, index) => {
                     const data = planetData[index];
                     const radius = isArtistic ? data.radius : data.realisticRadiusKM * REALISTIC_RADIUS_SCALE;
