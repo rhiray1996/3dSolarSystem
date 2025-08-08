@@ -1,235 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive 3D Solar System - Realistic Edition</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <div id="canvas-container">
-        <div class="loading">Loading Solar System...</div>
-    </div>
-
-    <div class="view-toggle">
-        <button id="systemViewBtn" class="active">System View</button>
-        <button id="planetViewBtn">Planet View</button>
-    </div>
-
-    <div class="toggle-panel" id="togglePanel">
-        <span class="icon">☰</span>
-    </div>
-
-    <div class="controls-panel" id="controlsPanel">
-        <h2>Solar System Controls</h2>
-
-        <div class="control-group">
-            <h3>Simulation Mode</h3>
-            <div class="view-toggle" style="position: relative; left: 0; transform: none; margin-bottom: 10px; justify-content: center;">
-                <button id="artisticModeBtn" class="active">Artistic</button>
-                <button id="realisticModeBtn">Realistic</button>
-            </div>
-        </div>
-
-        <div class="control-group" id="quick-nav-group">
-            <h3>Quick Navigation</h3>
-            <div id="nav-buttons"></div>
-        </div>
-
-        <div class="control-group">
-            <h3>Time & Animation</h3>
-            <div class="control-item">
-                <div class="control-label">
-                    <span>Time Scale</span>
-                    <span class="control-value" id="timeScaleValue">1.0x</span>
-                </div>
-                <input type="range" id="timeScale" min="0" max="10" step="0.1" value="1">
-            </div>
-            <div class="control-item">
-                <div class="control-label">
-                    <span>Orbit Speed</span>
-                    <span class="control-value" id="orbitSpeedValue">1.0x</span>
-                </div>
-                <input type="range" id="orbitSpeed" min="0" max="5" step="0.1" value="1">
-            </div>
-            <div class="control-item">
-                <div class="control-label">
-                    <span>Rotation Speed</span>
-                    <span class="control-value" id="rotationSpeedValue">1.0x</span>
-                </div>
-                <input type="range" id="rotationSpeed" min="0" max="5" step="0.1" value="1">
-            </div>
-        </div>
-
-        <div class="control-group" id="visual-settings-group">
-            <h3>Visual Settings</h3>
-            <div class="control-item">
-                <div class="control-label">
-                    <span>Planet Size</span>
-                    <span class="control-value" id="planetSizeValue">1.0x</span>
-                </div>
-                <input type="range" id="planetSize" min="0.5" max="3" step="0.1" value="1">
-            </div>
-            <div class="control-item">
-                <div class="control-label">
-                    <span>Orbit Size</span>
-                    <span class="control-value" id="orbitSizeValue">1.0x</span>
-                </div>
-                <input type="range" id="orbitSize" min="0.5" max="2" step="0.1" value="1">
-            </div>
-            <div class="control-item">
-                <div class="control-label">
-                    <span>Camera Distance</span>
-                    <span class="control-value" id="cameraDistanceValue">100</span>
-                </div>
-                <input type="range" id="cameraDistance" min="25" max="300" step="5" value="100">
-            </div>
-        </div>
-
-        <div class="control-group">
-            <h3>Display Options</h3>
-            <div class="control-item">
-                <div class="checkbox-wrapper">
-                    <input type="checkbox" id="showOrbits" checked>
-                    <label for="showOrbits">Show Orbits</label>
-                </div>
-            </div>
-            <div class="control-item">
-                <div class="checkbox-wrapper">
-                    <input type="checkbox" id="showLabels" checked>
-                    <label for="showLabels">Show Labels</label>
-                </div>
-            </div>
-            <div class="control-item">
-                <div class="checkbox-wrapper">
-                    <input type="checkbox" id="showStars" checked>
-                    <label for="showStars">Show Stars</label>
-                </div>
-            </div>
-            <div class="control-item">
-                <div class="checkbox-wrapper">
-                    <input type="checkbox" id="realisticLighting" checked>
-                    <label for="realisticLighting">Realistic Lighting</label>
-                </div>
-            </div>
-        </div>
-
-        <div class="control-group">
-            <h3>Lighting</h3>
-            <div class="control-item">
-                <div class="control-label">
-                    <span>Sun Intensity</span>
-                    <span class="control-value" id="sunIntensityValue">2.0</span>
-                </div>
-                <input type="range" id="sunIntensity" min="0" max="5" step="0.1" value="2">
-            </div>
-            <div class="control-item">
-                <div class="control-label">
-                    <span>Ambient Light</span>
-                    <span class="control-value" id="ambientLightValue">0.05</span>
-                </div>
-                <input type="range" id="ambientLight" min="0" max="0.3" step="0.01" value="0.05">
-            </div>
-        </div>
-
-        <div class="control-group">
-            <h3>Camera Actions</h3>
-            <button class="button" id="focusOnSun">Focus on Sun</button>
-            <button class="button secondary" id="resetCamera">Reset Camera</button>
-        </div>
-    </div>
-
-    <div class="info-panel">
-        <p><strong>Controls:</strong> Left click + drag to rotate • Right click + drag to pan • Scroll to zoom • Click planets for info</p>
-    </div>
-
-    <div class="help-text">
-        <p><strong>Tips:</strong> Use Planet View to follow planets closely • Adjust lighting for realistic day/night • Camera can zoom to 25 units</p>
-    </div>
-
-    <div class="status-indicator" id="statusIndicator">
-        <span id="statusText">Solar System View</span>
-    </div>
-
-    <div class="planet-info" id="planetInfo">
-        <h3 id="planetName"></h3>
-        
-        <div class="planet-info-section">
-            <h4>Overview</h4>
-            <p id="planetDescription"></p>
-        </div>
-        
-        <div class="planet-info-section">
-            <h4>Current Situation</h4>
-            <div id="planetSituation"></div>
-        </div>
-        
-        <div class="planet-info-section">
-            <h4>Key Facts</h4>
-            <div id="planetFacts"></div>
-        </div>
-        
-        <div class="planet-info-section">
-            <h4>Physical Properties</h4>
-            <div id="planetProperties"></div>
-        </div>
-
-        <!-- Gemini API Section -->
-        <div class="planet-info-section" id="gemini-insights">
-            <h4>Cosmic Insights ✨</h4>
-            <button class="button" id="generateFactBtn">Generate Fun Fact ✨</button>
-            <button class="button secondary" id="generateLogBtn">Generate Mission Log ✨</button>
-            <div id="gemini-response">Click a button to learn more!</div>
-        </div>
-        
-        <div class="modify-section">
-            <h4>
-                <span class="icon">⚙️</span>
-                Modify Planet
-            </h4>
-            
-            <div class="modify-control">
-                <div class="control-label">
-                    <span>Size</span>
-                    <span class="control-value" id="modifySizeValue">1.0x</span>
-                </div>
-                <input type="range" id="modifySize" min="0.5" max="3" step="0.1" value="1">
-            </div>
-            
-            <div class="modify-control">
-                <div class="control-label">
-                    <span>Rotation Speed</span>
-                    <span class="control-value" id="modifyRotationValue">1.0x</span>
-                </div>
-                <input type="range" id="modifyRotation" min="0" max="5" step="0.1" value="1">
-            </div>
-            
-            <div class="modify-control" id="orbitSpeedControl">
-                <div class="control-label">
-                    <span>Orbit Speed</span>
-                    <span class="control-value" id="modifyOrbitValue">1.0x</span>
-                </div>
-                <input type="range" id="modifyOrbit" min="0" max="5" step="0.1" value="1">
-            </div>
-            
-            <div class="modify-control">
-                <div class="control-label">
-                    <span>Color</span>
-                </div>
-                <div class="color-picker-wrapper">
-                    <input type="color" id="modifyColor" value="#ffffff">
-                    <span id="colorValue">#ffffff</span>
-                </div>
-            </div>
-            
-            <button class="reset-button" id="resetPlanet">Reset to Default</button>
-        </div>
-    </div>
-
-<<<<<<< HEAD
-    <script>
         window.addEventListener('DOMContentLoaded', () => {
             // Scene setup
             const scene = new THREE.Scene();
@@ -506,7 +274,6 @@
             // Create planets
             const planets = [];
             const orbits = [];
-            const moonOrbits = [];
             const labels = [];
             const planetModifiers = {};
             const allCelestialBodies = []; // For raycasting
@@ -517,13 +284,6 @@
             const KM_PER_AU = 149.6e6;
             const REALISTIC_DISTANCE_SCALE = 1500; // 1 AU = 1500 units
             const KM_TO_UNIT_SCALE = REALISTIC_DISTANCE_SCALE / KM_PER_AU; // Scale for moon distances
-
-            // Helper: build a circular orbit line geometry
-            function makeOrbitGeometry(radius, segments = 256) {
-                const curve = new THREE.EllipseCurve(0, 0, radius, radius, 0, Math.PI * 2, false, 0);
-                const points = curve.getPoints(segments);
-                return new THREE.BufferGeometry().setFromPoints(points);
-            }
 
             let sunPhongMaterial; // To store original sun material
 
@@ -550,15 +310,16 @@
                 planet.receiveShadow = true;
                 planet.userData = { ...data, index, isPlanet: true };
                 
-                // Create orbit (as a LineLoop for performance/clarity)
+                // Create orbit
                 if (data.distance > 0) {
-                    const orbitGeometry = makeOrbitGeometry(data.distance, 256);
-                    const orbitMaterial = new THREE.LineBasicMaterial({
-                        color: data.color,
+                    const orbitGeometry = new THREE.RingGeometry(data.distance - 0.2, data.distance + 0.2, 128);
+                    const orbitMaterial = new THREE.MeshBasicMaterial({ 
+                        color: data.color, 
+                        side: THREE.DoubleSide,
                         transparent: true,
-                        opacity: 0.6
+                        opacity: 0.3
                     });
-                    const orbit = new THREE.LineLoop(orbitGeometry, orbitMaterial);
+                    const orbit = new THREE.Mesh(orbitGeometry, orbitMaterial);
                     orbit.rotation.x = -Math.PI / 2;
                     scene.add(orbit);
                     orbits.push(orbit);
@@ -603,18 +364,16 @@
                         moon.receiveShadow = true;
                         moon.userData = { ...moonData, isPlanet: false, parentPlanet: planet };
                         
-                        // Add moon orbit (LineLoop)
-                        const moonOrbitGeom = makeOrbitGeometry(moonData.distance, 128);
-                        const moonOrbitMat = new THREE.LineBasicMaterial({ color: 0x666666, transparent: true, opacity: 0.6 });
-                        const moonOrbit = new THREE.LineLoop(moonOrbitGeom, moonOrbitMat);
+                        // Add moon orbit
+                        const moonOrbitGeom = new THREE.RingGeometry(moonData.distance - 0.05, moonData.distance + 0.05, 64);
+                        const moonOrbitMat = new THREE.MeshBasicMaterial({ color: 0x666666, side: THREE.DoubleSide, transparent: true, opacity: 0.3 });
+                        const moonOrbit = new THREE.Mesh(moonOrbitGeom, moonOrbitMat);
                         moonOrbit.rotation.x = -Math.PI / 2;
-                        moonOrbit.userData = { moonData, isMoonOrbit: true };
                         
                         planet.add(moonOrbit); // Add orbit to the planet
                         planet.add(moon); // Add moon as a child of the planet
                         allCelestialBodies.push(moon);
                         moonObjects.push(moon);
-                        moonOrbits.push(moonOrbit);
                     });
                 }
             });
@@ -740,7 +499,6 @@
             document.getElementById('showOrbits').addEventListener('change', (e) => {
                 showOrbits = e.target.checked;
                 orbits.forEach(orbit => orbit.visible = showOrbits);
-                moonOrbits.forEach(orbit => orbit.visible = showOrbits);
             });
 
             document.getElementById('showLabels').addEventListener('change', (e) => {
@@ -898,7 +656,7 @@
                     const originalDistance = planetData[index + 1].distance;
                     const newDistance = originalDistance * orbitSizeMultiplier;
                     orbit.geometry.dispose();
-                    orbit.geometry = makeOrbitGeometry(newDistance, 256);
+                    orbit.geometry = new THREE.RingGeometry(newDistance - 0.2, newDistance + 0.2, 128);
                 });
             }
 
@@ -1315,18 +1073,6 @@
                 sunLight.shadow.camera.updateProjectionMatrix();
                 
                 // Update scales and positions
-                orbits.forEach((orbit, index) => {
-                    const data = planetData[index + 1];
-                    const distance = isArtistic ? data.distance : data.realisticDistanceAU * REALISTIC_DISTANCE_SCALE;
-                    orbit.geometry.dispose();
-                    orbit.geometry = makeOrbitGeometry(distance, 256);
-                });
-                moonOrbits.forEach((mOrbit) => {
-                    const md = mOrbit.userData.moonData;
-                    const radius = isArtistic ? md.distance : md.realisticDistanceKM * KM_TO_UNIT_SCALE;
-                    mOrbit.geometry.dispose();
-                    mOrbit.geometry = makeOrbitGeometry(radius, 128);
-                });
                 planets.forEach((planet, index) => {
                     const data = planetData[index];
                     const radius = isArtistic ? data.radius : data.realisticRadiusKM * REALISTIC_RADIUS_SCALE;
@@ -1402,9 +1148,3 @@
             // Start animation
             animate();
         });
-    </script>
-=======
-    <script src="main.js"></script>
->>>>>>> origin/main
-</body>
-</html>
